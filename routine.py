@@ -2,23 +2,32 @@ print('Importing')
 import time
 from hcsr04 import HCSR04
 import ntptime
-import json
-from urequests import get as uget
+## import json
+## from urequests import get as uget
 
-url = 'http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/3840?res=3hourly&key=50102072-d813-4fd4-89fe-fc41a40687bc'
 
-data = uget(url)
-f = open('3hrForecast.json','w')
-f.write(data.text)
-f.close()
+import socket
+from umqtt.simple import MQTTClient
+key = b'2086220ca65348708a8a292b8b6029b3'
+topic = ''
+msg = ''
 
-f = open('3hrForecast.json')
-text = f.read()
-recordText = '{"DV'+text.split('DV')[-1][0:-1]
-smallParse = json.loads(recordText)
-f.close()
+def sub_cb(topic, msg):
+    print((topic, msg))
+    return topic,msg
 
-exit()
+ip = socket.getaddrinfo('io.adafruit.com',1883)[0][4][0]
+c = MQTTClient(client_id='uid',server=ip,port=1883,user=b'neilnutt',password=key)
+c.set_callback(sub_cb)
+c.connect()
+c.publish(topic="neilnutt/feeds/emptydistmm",msg="333")
+c.publish(topic="neilnutt/feeds/currentwlmm",msg="333")
+c.subscribe(b"neilnutt/feeds/emptydistmm")
+
+while True:
+    c.check_msg()
+    time.sleep()
+
 
 try:
     ntptime.settime()
