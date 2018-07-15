@@ -10,6 +10,20 @@ import bme280
 
 PARAMETERS = {}
 
+ap_if = network.WLAN(network.AP_IF)
+sta_if = network.WLAN(network.STA_IF)
+
+print('Access point:')
+print('Active ', ap_if.active(0))
+print('ipconfig: ',ap_if.ifconfig())
+print('')
+print('Station:')
+print('Active ', sta_if.active())
+print('Is connected: ', sta_if.isconnected())
+print('ipconfig: ', sta_if.ifconfig())
+
+
+
 def test():
     temp,pressure = measure_temp_pressure()
     print(temp,pressure)
@@ -94,25 +108,32 @@ def measure_temp_pressure():
 
     return temperature,pressure
 
-def measure_distance():
+def measure_distance(samples = 41):
     sensor = HCSR04(trigger_pin=3, echo_pin=12)
     distances = list()
-    for i in range(0,40):
+    for i in range(0,samples-1):
         reading = sensor.distance_cm()*10.0
         if reading is not None and reading > 0.0:
             distances.append(reading)
             time.sleep(0.15)
 
+    distances.sort()
     if len(distances) == 0:
         distance = None
     else:
-        distances.sort()
         mean_distance_mm = sum(distances)/len(distances)
-        median_distance_mm = distances[20]
+        median_distance_mm = distances[int((samples-1)/2)]
         ##print(min(distances),mean_distance_mm,median_distance_mm,max(distances))
         distance = median_distance_mm
 
-    return distance
+    if len(distances) < 9:
+        q1 = None
+        q3 = None
+    else:
+        g1 = distances[int((samples)/4)]
+        g3 = distances[int(3* (samples) / 4)]
+
+    return distance,q1,q3
 
 
 def routine():
